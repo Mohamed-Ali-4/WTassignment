@@ -89,26 +89,20 @@ Free Render services sleep when idle (first visit takes ~30–50 s) and have no 
 so registrations are wiped on restart/redeploy. Fine for a demo; use AWS below to keep data.
 
 ### Option B — AWS EC2 (data is kept)
-1. EC2 → **Launch instance**: Amazon Linux 2023, `t3.micro`/`t2.micro`, allow **HTTP** and **SSH**.
-2. **Connect** → **EC2 Instance Connect**, then run:
+The script `deploy/aws-ec2.sh` installs Docker and Git, downloads this repo, builds and starts
+the app on port 80, and keeps registrations in a Docker volume.
+
+1. EC2 → **Launch instance**: Amazon Linux 2023, `t3.micro`/`t2.micro`, tick **Allow HTTP traffic
+   from the internet**.
+2. Under **Advanced details → User data**, paste the whole of `deploy/aws-ec2.sh`, changing
+   `ChangeMe-Admin-2027` to your own admin password. Launch.
+3. Wait ~5 minutes, then open `http://<instance-public-ip>/` (form) and `/admin/`.
+
+Or run it by hand on an existing instance (EC2 Instance Connect):
 
 ```bash
-sudo dnf install -y docker git && sudo systemctl enable --now docker
+sudo dnf install -y git && git clone https://github.com/Mohamed-Ali-4/WTassignment.git && sudo bash WTassignment/deploy/aws-ec2.sh 'YourPassword'
 ```
 
-```bash
-git clone https://github.com/Mohamed-Ali-4/WTassignment.git
-```
-
-```bash
-cd WTassignment && sudo docker build -t techfest .
-```
-
-```bash
-sudo docker run -d --name techfest --restart unless-stopped -p 80:80 -e ADMIN_PASSWORD=YourPassword123 -v techfest-data:/var/www/html/data techfest
-```
-
-3. Open `http://<instance-public-ip>/` (form) and `http://<instance-public-ip>/admin/`.
-
-To update later: `git pull`, rebuild, `sudo docker rm -f techfest`, and run the same
-`docker run` command — the `techfest-data` volume keeps all registrations.
+To update after pushing new code, run `sudo bash /opt/techfest/deploy/aws-ec2.sh 'YourPassword'`
+on the instance; registrations are kept.
