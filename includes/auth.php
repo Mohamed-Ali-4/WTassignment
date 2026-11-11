@@ -73,7 +73,7 @@ function require_post_with_csrf(): void
 function admin_nav(): string
 {
     return '<form method="post" action="logout.php" class="admin-nav">' . csrf_field()
-        . '<a href="index.php">Applications</a>'
-        . '<a href="../index.html" target="_blank" rel="noopener">Open form &#8599;</a>'
+        . '<a href="index.php">Registrations</a>'
+        . '<a href="../" target="_blank" rel="noopener">Open form &#8599;</a>'
         . '<button type="submit">Log out</button></form>';
 }

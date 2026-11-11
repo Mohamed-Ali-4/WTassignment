@@ -1,53 +1,71 @@
-# Online Admission Portal — Application / Registration Form
+# TechVerse 2027 — Tech Fest Event Registration
 
-A web application built with **HTML5, CSS3, JavaScript, jQuery and PHP**. Applicants fill in
-a 3-step registration form; on clicking **Submit**, the data is validated and sent to PHP, which
-saves it in a database and returns a formatted acknowledgement (with an application number) that
-is displayed in the browser and can be printed or saved as PDF. Staff use a password-protected
-**admin panel** to see, search, export and delete applications.
+An online **event registration** web application for a college technical fest, built with
+**HTML5, CSS3, JavaScript, jQuery and PHP**. Participants fill in a 3-step registration form;
+on clicking **Register Now** the data is validated, saved to a database by PHP, and a formatted
+**event pass** (with registration number and QR code) is displayed in the browser, ready to print
+or save as PDF. Organisers use a password-protected **admin panel** to view, search, export and
+delete registrations.
 
 ## Front end vs back end
 
 | | Files | Job |
 |---|---|---|
-| **Front end** (runs in the browser) | `index.html`, `assets/css/style.css`, `assets/js/app.js` | Shows the form, validates as you type, sends data to the server with jQuery AJAX, displays the result |
-| **Back end** (runs on the server) | `submit.php`, `includes/*.php`, `admin/*.php` | Re-validates & sanitises, stores in SQLite, generates the application number, renders the acknowledgement, admin panel |
-| **Database** | `data/applications.db` (created automatically) | One row per application |
+| **Front end** (browser) | `index.php` (form markup), `assets/css/style.css`, `assets/js/app.js`, `assets/js/qr.js` | Shows the form, validates as you type, limits event choices, manages team members, calculates the fee live, sends the data with jQuery AJAX and shows the event pass |
+| **Back end** (server) | `submit.php`, `includes/*.php`, `admin/*.php` | Re-validates & sanitises everything, recalculates the fee, stores the registration in SQLite, generates the registration number, renders the pass, runs the admin panel |
+| **Database** | `data/techfest.db` (created automatically) | One row per registration |
 
-Flow: browser form → jQuery `$.ajax` POST → `submit.php` → validate → `INSERT` into SQLite →
-JSON with result HTML → jQuery shows it. Admin: `admin/login.php` → `admin/index.php` (list,
-search, stats) → `view.php` / `delete.php` / `export.php`.
+**Flow:** form → jQuery `$.ajax` POST → `submit.php` → validate → `INSERT` into SQLite →
+JSON containing the pass HTML → jQuery displays it and draws the QR code.
 
 ## Features
 
-| Layer | What it does |
-|---|---|
-| **HTML** (`index.html`) | Semantic 3-step form: personal, academic, contact details; photo upload; radio, select, checkbox, textarea, date inputs |
-| **CSS** (`assets/css/style.css`) | Modern responsive design, animated stepper and progress bar, dark mode, mobile layout, print stylesheet |
-| **JavaScript / jQuery** (`assets/js/app.js`) | Step navigation, live validation with inline messages, photo preview, age calculation, character counter, AJAX submission, animated result display |
-| **PHP** (`submit.php`, `includes/`) | Server-side validation & sanitisation (XSS-safe output, whitelisted options, real MIME check on uploads), application number, formatted result page |
-| **Database** (`includes/db.php`) | SQLite via PDO with prepared statements; table created automatically |
-| **Admin panel** (`admin/`) | Password login, stats (total, today, average score, top program), search & program filter, pagination, view full application, delete, CSV export; CSRF-protected actions |
+**Registration form**
+- Countdown timer to the fest, 3-step wizard with progress bar
+- Step 1 *Participant*: photo (preview), name, email, mobile, date of birth (age shown), gender
+- Step 2 *College*: college, roll number, department, year of study, city, state
+- Step 3 *Events & Team*: 8 event cards (choose up to 3, the rest lock automatically), solo/team
+  entry with add/remove team members, T-shirt size, food preference, hostel stay, **live fee
+  calculator**, declaration
+- Inline validation messages; works without JavaScript too (plain form POST)
 
-Works without JavaScript too: the form then posts normally and PHP renders a full result page.
+**Event pass (result)**
+- Ticket-style pass: participant photo, college, team, chosen events with date & venue,
+  registration number, scannable QR code, fee
+- Full details tables and fee breakdown; print stylesheet for **Print / Save as PDF**
+
+**Admin panel** (`/admin/`)
+- Password login, stats (total, today, fees expected, most popular event)
+- Registrations-per-event bar chart, search, filter by event, pagination
+- View full pass, delete (CSRF-protected), CSV export for Excel
+
+**Security**
+- All output escaped (XSS-safe); only whitelisted choices accepted; fee calculated on the server
+- PDO prepared statements; photo checked by real MIME type, never written to disk
+- Database and include files blocked from the web (`.htaccess`)
 
 ## Project structure
 
 ```
-index.html                 the form
-submit.php                 form handler (JSON for AJAX, full page otherwise)
-includes/functions.php     validation, sanitising, rendering helpers
-includes/result-template.php  acknowledgement card markup
-includes/db.php            SQLite database (PDO)
-includes/auth.php          admin login + CSRF protection
-includes/layout.php        shared page header/footer
-admin/                     admin panel: login, list, view, delete, export, logout
-data/                      SQLite database file (not committed, not web-accessible)
-assets/css/style.css
-assets/js/app.js
-assets/vendor/jquery-3.7.1.min.js   local fallback if the CDN is unreachable
-Dockerfile, render.yaml    cloud hosting
+index.php                     registration form (front end)
+submit.php                    form handler: JSON for AJAX, full page otherwise
+includes/config.php           fest name, dates, events, fees, choice lists (edit me!)
+includes/functions.php        validation, sanitising, pass rendering
+includes/pass-template.php    event pass markup
+includes/db.php               SQLite database (PDO)
+includes/auth.php             admin login + CSRF protection
+includes/layout.php           shared header (hero + countdown) and footer
+admin/                        admin panel: login, list, view, delete, export, logout
+assets/css/style.css          all styling (responsive, dark mode, print)
+assets/js/app.js              jQuery: wizard, validation, events, team, fee, AJAX
+assets/js/qr.js               draws QR codes on the pass
+assets/vendor/                jQuery (fallback copy) and qrcode-generator (MIT)
+data/                         SQLite database file (not committed, not web-accessible)
+Dockerfile, render.yaml       cloud hosting
 ```
+
+To change the fest name, dates, events or fees, edit `includes/config.php` — the form, the
+validation and the admin panel all update automatically.
 
 ## Run locally
 
@@ -55,37 +73,42 @@ Dockerfile, render.yaml    cloud hosting
 ADMIN_PASSWORD=choose-a-password php -S localhost:8000
 ```
 
-Form: http://localhost:8000 — Admin: http://localhost:8000/admin/ (log in with the password above).
+Form: http://localhost:8000 — Admin: http://localhost:8000/admin/
+
 The admin panel stays disabled until `ADMIN_PASSWORD` is set.
 
 ## Host on the cloud
 
-### Option A — Render (free, deploys straight from GitHub)
-1. Sign in at https://render.com with GitHub.
-2. **New → Blueprint**, pick this repository (it reads `render.yaml`), click **Apply**.
-   *(Or **New → Web Service** → this repo → Runtime **Docker** → Free plan.)*
-3. After the build finishes you get a public URL like `https://online-admission-portal.onrender.com`.
+### Option A — Render (free)
+1. Sign in at https://dashboard.render.com with GitHub.
+2. **New + → Blueprint**, pick this repository and branch, click **Apply**.
+3. Wait for the build (~3–5 min); your URL appears at the top of the service page.
+4. Admin password: service → **Environment** → `ADMIN_PASSWORD` (generated; you can change it).
 
-4. Admin password: Render generates one. Find it under your service → **Environment** →
-   `ADMIN_PASSWORD` (you can change it there). Admin panel: `https://<your-app>.onrender.com/admin/`.
+Free Render services sleep when idle (first visit takes ~30–50 s) and have no permanent disk,
+so registrations are wiped on restart/redeploy. Fine for a demo; use AWS below to keep data.
 
-Free Render services sleep after inactivity; the first request after that takes ~30–50 s.
-**Note:** the free plan has no permanent disk, so saved applications are wiped whenever the
-service restarts, sleeps or redeploys. That's fine for a demo; for permanent storage add a Render
-persistent disk (paid) mounted at e.g. `/var/data` and set `DB_PATH=/var/data/applications.db`.
+### Option B — AWS EC2 (data is kept)
+1. EC2 → **Launch instance**: Amazon Linux 2023, `t3.micro`/`t2.micro`, allow **HTTP** and **SSH**.
+2. **Connect** → **EC2 Instance Connect**, then run:
 
-### Option B — InfinityFree / 000webhost-style free PHP hosting
-1. Create a free account and a hosting site (e.g. https://infinityfree.com).
-2. Open the File Manager (or FTP) and upload everything **into `htdocs/`**:
-   `index.html`, `submit.php`, `.htaccess`, `includes/`, `assets/`, `admin/`, `data/`.
-3. Shared hosts usually can't set environment variables, so add this line to `.htaccess`
-   to set the admin password: `SetEnv ADMIN_PASSWORD your-password`
-   (needs the host to support SQLite / `pdo_sqlite`).
-4. Visit your site URL.
-
-### Option C — Any Docker host (Railway, Fly.io, Google Cloud Run)
 ```bash
-docker build -t admission-portal .
-docker run -p 8080:80 -e ADMIN_PASSWORD=choose-a-password admission-portal
+sudo dnf install -y docker git && sudo systemctl enable --now docker
 ```
-The container honours the `$PORT` variable the platform provides.
+
+```bash
+git clone -b claude/confident-albattani-1tvbnj https://github.com/Mohamed-Ali-4/WTassignment.git
+```
+
+```bash
+cd WTassignment && sudo docker build -t techfest .
+```
+
+```bash
+sudo docker run -d --name techfest --restart unless-stopped -p 80:80 -e ADMIN_PASSWORD=YourPassword123 -v techfest-data:/var/www/html/data techfest
+```
+
+3. Open `http://<instance-public-ip>/` (form) and `http://<instance-public-ip>/admin/`.
+
+To update later: `git pull`, rebuild, `sudo docker rm -f techfest`, and run the same
+`docker run` command — the `techfest-data` volume keeps all registrations.

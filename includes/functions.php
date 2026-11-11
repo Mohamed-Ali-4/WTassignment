@@ -1,30 +1,10 @@
 <?php
 /**
- * Helper functions: sanitising, validation and rendering of the acknowledgement.
+ * Helper functions: sanitising, validation and rendering of the event pass.
+ * Requires includes/config.php.
  */
 
 declare(strict_types=1);
-
-const ALLOWED_GENDERS        = ['Male', 'Female', 'Other'];
-const ALLOWED_MODES          = ['Full-time', 'Part-time', 'Online'];
-const ALLOWED_CATEGORIES     = ['General', 'OBC', 'SC', 'ST', 'EWS'];
-const ALLOWED_NATIONALITIES  = ['Indian', 'American', 'British', 'Canadian', 'Australian', 'Other'];
-const ALLOWED_QUALIFICATIONS = ['12th / Higher Secondary', 'Diploma', "Bachelor's Degree", "Master's Degree"];
-const ALLOWED_PROGRAMS = [
-    'B.Tech Computer Science & Engineering',
-    'B.Tech Electronics & Communication',
-    'B.Tech Mechanical Engineering',
-    'BCA',
-    'B.Sc Data Science',
-    'M.Tech Computer Science',
-    'MCA',
-    'MBA',
-];
-const ALLOWED_INTERESTS = [
-    'Web Development', 'Artificial Intelligence', 'Cyber Security', 'Cloud Computing',
-    'Data Science', 'Robotics', 'Entrepreneurship',
-];
-const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 
 /** Escape a value for safe output in HTML. */
 function e(?string $value): string
@@ -32,15 +12,11 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** Read a trimmed string from POST, collapsing internal whitespace runs on single-line fields. */
-function input(string $key, bool $multiline = false): string
+/** Read a trimmed single-line string from POST (internal whitespace collapsed). */
+function input(string $key): string
 {
     $value = $_POST[$key] ?? '';
-    if (!is_string($value)) {
-        return '';
-    }
-    $value = trim($value);
-    return $multiline ? preg_replace("/\r\n?/", "\n", $value) : preg_replace('/\s+/', ' ', $value);
+    return is_string($value) ? (string) preg_replace('/\s+/', ' ', trim($value)) : '';
 }
 
 function str_len(string $s): int
@@ -48,78 +24,92 @@ function str_len(string $s): int
     return function_exists('mb_strlen') ? mb_strlen($s) : strlen($s);
 }
 
+const NAME_PATTERN = "/^[A-Za-z][A-Za-z .'-]*$/";
+
 /**
- * Validate the submission.
+ * Validate a registration.
  *
  * @return array{0: array<string,mixed>, 1: array<string,string>} [clean data, errors]
  */
-function validate_application(): array
+function validate_registration(): array
 {
     $d = [
         'first_name'    => input('first_name'),
         'last_name'     => input('last_name'),
+        'email'         => strtolower(input('email')),
+        'phone'         => (string) preg_replace('/[\s-]/', '', input('phone')),
         'dob'           => input('dob'),
         'gender'        => input('gender'),
-        'nationality'   => input('nationality'),
-        'category'      => input('category') ?: 'General',
-        'program'       => input('program'),
-        'mode'          => input('mode'),
-        'qualification' => input('qualification'),
-        'percentage'    => input('percentage'),
-        'passing_year'  => input('passing_year'),
-        'institution'   => input('institution'),
-        'statement'     => input('statement', true),
-        'email'         => input('email'),
-        'phone'         => preg_replace('/[\s-]/', '', input('phone')),
-        'address'       => input('address', true),
+        'college'       => input('college'),
+        'roll_no'       => strtoupper(input('roll_no')),
+        'department'    => input('department'),
+        'year'          => input('year'),
         'city'          => input('city'),
         'state'         => input('state'),
-        'pincode'       => input('pincode'),
+        'participation' => input('participation'),
+        'team_name'     => input('team_name'),
+        'tshirt'        => input('tshirt'),
+        'food'          => input('food'),
+        'accommodation' => input('accommodation'),
         'declaration'   => isset($_POST['declaration']),
-        'interests'     => [],
+        'events'        => [],
+        'team_members'  => [],
         'photo'         => null,
     ];
     $errors = [];
-    $namePattern = "/^[A-Za-z][A-Za-z .'-]*$/";
 
-    // Names
+    // ---- Participant ----
     foreach (['first_name' => 'First name', 'last_name' => 'Last name'] as $key => $label) {
         if ($d[$key] === '') {
             $errors[$key] = "$label is required.";
-        } elseif (str_len($d[$key]) > 50 || !preg_match($namePattern, $d[$key])) {
+        } elseif (str_len($d[$key]) > 50 || !preg_match(NAME_PATTERN, $d[$key])) {
             $errors[$key] = "$label may contain only letters, spaces, apostrophes and hyphens.";
         }
     }
     if (!isset($errors['first_name']) && str_len($d['first_name']) < 2) {
         $errors['first_name'] = 'Please enter at least 2 characters.';
     }
+    if (!filter_var($d['email'], FILTER_VALIDATE_EMAIL) || str_len($d['email']) > 100) {
+        $errors['email'] = 'Please enter a valid email address.';
+    }
+    if (!preg_match('/^\+?[0-9]{10,14}$/', $d['phone'])) {
+        $errors['phone'] = 'Enter a valid 10-14 digit mobile number.';
+    }
 
-    // Date of birth
     $dob = DateTime::createFromFormat('!Y-m-d', $d['dob']);
-    if (!$dob || $dob->format('Y-m-d') !== $d['dob']) {
+    if (!$dob || $dob->format('Y-m-d') !== $d['dob'] || $dob > new DateTime('today')) {
         $errors['dob'] = 'Please enter a valid date of birth.';
     } else {
-        $today = new DateTime('today');
-        if ($dob > $today) {
-            $errors['dob'] = 'Date of birth cannot be in the future.';
-        } else {
-            $d['age'] = $dob->diff($today)->y;
-            if ($d['age'] < 15) {
-                $errors['dob'] = 'Applicants must be at least 15 years old.';
-            } elseif ($d['age'] > 100) {
-                $errors['dob'] = 'Please enter a valid date of birth.';
-            }
+        $age = $dob->diff(new DateTime('today'))->y;
+        if ($age < 15) {
+            $errors['dob'] = 'Participants must be at least 15 years old.';
+        } elseif ($age > 60) {
+            $errors['dob'] = 'Please enter a valid date of birth.';
         }
     }
 
-    // Choice lists (whitelisted)
+    // ---- College ----
+    if (str_len($d['college']) < 3 || str_len($d['college']) > 120) {
+        $errors['college'] = 'Please enter your college name.';
+    }
+    if (!preg_match('/^[A-Z0-9\/-]{3,20}$/', $d['roll_no'])) {
+        $errors['roll_no'] = 'Use 3-20 letters, digits, "/" or "-".';
+    }
+    foreach (['city' => 'City', 'state' => 'State'] as $key => $label) {
+        if ($d[$key] === '' || str_len($d[$key]) > 50) {
+            $errors[$key] = "$label is required.";
+        }
+    }
+
+    // ---- Choice lists (only whitelisted values are accepted) ----
     $choices = [
         'gender'        => [ALLOWED_GENDERS, 'Please select your gender.'],
-        'nationality'   => [ALLOWED_NATIONALITIES, 'Please select your nationality.'],
-        'category'      => [ALLOWED_CATEGORIES, 'Please select a valid category.'],
-        'program'       => [ALLOWED_PROGRAMS, 'Please choose a program.'],
-        'mode'          => [ALLOWED_MODES, 'Please select a study mode.'],
-        'qualification' => [ALLOWED_QUALIFICATIONS, 'Please select your qualification.'],
+        'department'    => [ALLOWED_DEPARTMENTS, 'Please select your department.'],
+        'year'          => [ALLOWED_YEARS, 'Please select your year of study.'],
+        'participation' => [ALLOWED_PARTICIPATION, 'Please choose solo or team.'],
+        'tshirt'        => [ALLOWED_TSHIRTS, 'Please choose a T-shirt size.'],
+        'food'          => [ALLOWED_FOOD, 'Please choose a food preference.'],
+        'accommodation' => [ALLOWED_ACCOMMODATION, 'Please choose an option.'],
     ];
     foreach ($choices as $key => [$allowed, $msg]) {
         if (!in_array($d[$key], $allowed, true)) {
@@ -127,57 +117,47 @@ function validate_application(): array
         }
     }
 
-    // Academic
-    if ($d['percentage'] === '' || !is_numeric($d['percentage'])
-        || (float) $d['percentage'] < 0 || (float) $d['percentage'] > 100) {
-        $errors['percentage'] = 'Enter a percentage between 0 and 100.';
-    } else {
-        $d['percentage'] = rtrim(rtrim(number_format((float) $d['percentage'], 2, '.', ''), '0'), '.');
+    // ---- Events ----
+    $events = $_POST['events'] ?? [];
+    if (is_array($events)) {
+        $d['events'] = array_values(array_intersect(array_keys(fest_events()), $events));
+    }
+    if (!$d['events']) {
+        $errors['events'] = 'Please choose at least one event.';
+    } elseif (count($d['events']) > MAX_EVENTS) {
+        $errors['events'] = 'You can register for at most ' . MAX_EVENTS . ' events.';
     }
 
-    $year = (int) $d['passing_year'];
-    $thisYear = (int) date('Y');
-    if (!ctype_digit($d['passing_year']) || $year < $thisYear - 30 || $year > $thisYear) {
-        $errors['passing_year'] = 'Please select a valid year.';
-    }
-
-    if (str_len($d['institution']) < 3 || str_len($d['institution']) > 120) {
-        $errors['institution'] = 'Please enter your institution name (3-120 characters).';
-    }
-
-    if (str_len($d['statement']) > 500) {
-        $errors['statement'] = 'Statement must be 500 characters or fewer.';
-    }
-
-    // Interests
-    $interests = $_POST['interests'] ?? [];
-    if (is_array($interests)) {
-        $d['interests'] = array_values(array_intersect(ALLOWED_INTERESTS, $interests));
-    }
-
-    // Contact
-    if (!filter_var($d['email'], FILTER_VALIDATE_EMAIL) || str_len($d['email']) > 100) {
-        $errors['email'] = 'Please enter a valid email address.';
-    }
-    if (!preg_match('/^\+?[0-9]{10,14}$/', $d['phone'])) {
-        $errors['phone'] = 'Enter a valid 10-14 digit mobile number.';
-    }
-    if (str_len($d['address']) < 5 || str_len($d['address']) > 250) {
-        $errors['address'] = 'Please enter your full address.';
-    }
-    foreach (['city' => 'City', 'state' => 'State'] as $key => $label) {
-        if ($d[$key] === '' || str_len($d[$key]) > 50) {
-            $errors[$key] = "$label is required.";
+    // ---- Team ----
+    if ($d['participation'] === 'Team') {
+        if (str_len($d['team_name']) < 2 || str_len($d['team_name']) > 50 || !preg_match("/^[\\p{L}0-9 .'&_-]+$/u", $d['team_name'])) {
+            $errors['team_name'] = 'Please enter a team name (2-50 characters).';
         }
-    }
-    if (!preg_match('/^[A-Za-z0-9 -]{4,10}$/', $d['pincode'])) {
-        $errors['pincode'] = 'Please enter a valid PIN / ZIP code.';
-    }
-    if (!$d['declaration']) {
-        $errors['declaration'] = 'You must accept the declaration.';
+        $members = $_POST['team_members'] ?? [];
+        foreach (is_array($members) ? $members : [] as $m) {
+            $m = is_string($m) ? (string) preg_replace('/\s+/', ' ', trim($m)) : '';
+            if ($m === '') {
+                continue;
+            }
+            if (str_len($m) > 60 || !preg_match(NAME_PATTERN, $m)) {
+                $errors['team_members'] = 'Member names may contain only letters, spaces, apostrophes and hyphens.';
+            }
+            $d['team_members'][] = $m;
+        }
+        if (!$d['team_members']) {
+            $errors['team_members'] = 'Add at least one team member.';
+        } elseif (count($d['team_members']) > MAX_TEAM_MEMBERS) {
+            $errors['team_members'] = 'A team can have at most ' . MAX_TEAM_MEMBERS . ' members besides you.';
+        }
+    } else {
+        $d['team_name'] = '';
     }
 
-    // Optional photo: validated by real MIME type, embedded as a data URI (never stored on disk)
+    if (!$d['declaration']) {
+        $errors['declaration'] = 'Please accept the declaration to continue.';
+    }
+
+    // ---- Optional photo: checked by real MIME type, embedded as a data URI (never written to disk) ----
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
         $f = $_FILES['photo'];
         if ($f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) {
@@ -194,29 +174,32 @@ function validate_application(): array
         }
     }
 
+    // The fee is always worked out here, never trusted from the browser.
+    $d['fee'] = calculate_fee($d['events'], $d['accommodation'] === 'Yes');
+
     return [$d, $errors];
 }
 
-/** Build a readable application number, e.g. ADM-2026-4F9A21. */
-function application_id(): string
+/** Build a readable registration number, e.g. TV27-4F9A21. */
+function registration_id(): string
 {
-    return 'ADM-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
+    return REG_PREFIX . '-' . strtoupper(bin2hex(random_bytes(3)));
 }
 
 /**
- * Render the acknowledgement card as an HTML fragment.
- * $admin = true hides the applicant-facing buttons (used on the admin "view" page).
+ * Render the event pass as an HTML fragment.
+ * $admin = true swaps the applicant-facing heading/buttons (used on the admin "view" page).
  */
-function render_result(array $d, bool $admin = false): string
+function render_pass(array $d, bool $admin = false): string
 {
-    $d['app_id']    = $d['app_id'] ?? application_id();
-    $created        = new DateTime($d['created_at'] ?? 'now');
-    $d['submitted'] = $created->format('d M Y, h:i A');
+    $d['submitted'] = (new DateTime($d['created_at'] ?? 'now'))->format('d M Y, h:i A');
     $d['full_name'] = $d['first_name'] . ' ' . $d['last_name'];
     $d['initials']  = strtoupper(substr($d['first_name'], 0, 1) . substr($d['last_name'], 0, 1));
-    $d['dob_fmt']   = DateTime::createFromFormat('!Y-m-d', $d['dob'])->format('d F Y');
+    $d['dob_fmt']   = DateTime::createFromFormat('!Y-m-d', $d['dob'])->format('d M Y');
+    $d['qr']        = FEST_NAME . ' | ' . $d['reg_id'] . ' | ' . $d['full_name'];
+    $allEvents      = fest_events();
 
     ob_start();
-    include __DIR__ . '/result-template.php';
+    include __DIR__ . '/pass-template.php';
     return (string) ob_get_clean();
 }

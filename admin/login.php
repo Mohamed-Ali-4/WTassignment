@@ -33,7 +33,7 @@ page_start('Admin Login', '../', 'Admin Panel');
       Set the <code>ADMIN_PASSWORD</code> environment variable on the server and reload this page.
     </p>
   <?php else: ?>
-    <p class="hint">Sign in to view and manage submitted applications.</p>
+    <p class="hint">Sign in to view and manage fest registrations.</p>
     <form method="post" autocomplete="off">
       <div class="field">
         <label for="password">Password</label>
@@ -43,7 +43,7 @@ page_start('Admin Login', '../', 'Admin Panel');
       <button type="submit" class="btn btn-primary btn-block">Sign in</button>
     </form>
   <?php endif; ?>
-  <p class="hint back-link"><a href="../index.html">&larr; Back to the application form</a></p>
+  <p class="hint back-link"><a href="../">&larr; Back to the registration form</a></p>
 </section>
 <?php
-page_end();
+page_end('../');
