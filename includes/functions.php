@@ -203,11 +203,15 @@ function application_id(): string
     return 'ADM-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
 }
 
-/** Render the acknowledgement card as an HTML fragment. */
-function render_result(array $d): string
+/**
+ * Render the acknowledgement card as an HTML fragment.
+ * $admin = true hides the applicant-facing buttons (used on the admin "view" page).
+ */
+function render_result(array $d, bool $admin = false): string
 {
-    $d['app_id']    = application_id();
-    $d['submitted'] = (new DateTime())->format('d M Y, h:i A');
+    $d['app_id']    = $d['app_id'] ?? application_id();
+    $created        = new DateTime($d['created_at'] ?? 'now');
+    $d['submitted'] = $created->format('d M Y, h:i A');
     $d['full_name'] = $d['first_name'] . ' ' . $d['last_name'];
     $d['initials']  = strtoupper(substr($d['first_name'], 0, 1) . substr($d['last_name'], 0, 1));
     $d['dob_fmt']   = DateTime::createFromFormat('!Y-m-d', $d['dob'])->format('d F Y');

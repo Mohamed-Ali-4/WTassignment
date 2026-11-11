@@ -6,3 +6,6 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /
+    envVars:
+      - key: ADMIN_PASSWORD
+        generateValue: true   # random password; see it in Render > Environment

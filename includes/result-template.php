@@ -1,5 +1,8 @@
 <?php
-/** @var array $d  Validated application data (escaped on output with e()). */
+/**
+ * @var array $d      Application data (escaped on output with e()).
+ * @var bool  $admin  True when shown inside the admin panel.
+ */
 ?>
 <article class="card result">
   <div class="success-banner">
@@ -7,8 +10,13 @@
       <circle cx="26" cy="26" r="25"/>
       <path d="M14 27l8 8 16-16"/>
     </svg>
+    <?php if ($admin): ?>
+    <h2>Application Details</h2>
+    <p>Submitted by <?= e($d['first_name'] . ' ' . $d['last_name']) ?></p>
+    <?php else: ?>
     <h2>Application Submitted Successfully!</h2>
     <p>Thank you, <?= e($d['first_name']) ?>. Your application has been received. Please keep a copy for your records.</p>
+    <?php endif; ?>
   </div>
 
   <div class="app-meta">
@@ -92,6 +100,10 @@
 
   <div class="result-actions">
     <button type="button" class="btn btn-primary js-print" onclick="window.print()">Print / Save as PDF</button>
+    <?php if ($admin): ?>
+    <a href="index.php" class="btn btn-ghost">&larr; Back to all applications</a>
+    <?php else: ?>
     <a href="index.html" class="btn btn-ghost js-new">New Application</a>
+    <?php endif; ?>
   </div>
 </article>

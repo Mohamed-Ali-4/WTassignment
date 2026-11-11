@@ -11,8 +11,10 @@ RUN { echo 'upload_max_filesize=3M'; echo 'post_max_size=4M'; echo 'expose_php=O
 
 COPY . /var/www/html/
 RUN rm -rf /var/www/html/.git /var/www/html/Dockerfile /var/www/html/render.yaml \
+ && mkdir -p /var/www/html/data \
  && chown -R www-data:www-data /var/www/html
 
+# Apache passes ADMIN_PASSWORD / DB_PATH from the container environment to PHP via getenv()
 # Cloud platforms pass the port in $PORT (Render/Cloud Run); default to 80 locally
 ENV PORT=80
 CMD sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf \
