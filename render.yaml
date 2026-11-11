@@ -1,0 +1,8 @@
+# One-click deploy on Render (https://render.com) — free web service
+services:
+  - type: web
+    name: online-admission-portal
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
