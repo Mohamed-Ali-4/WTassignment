@@ -81,7 +81,7 @@ The admin panel stays disabled until `ADMIN_PASSWORD` is set.
 
 ### Option A — Render (free)
 1. Sign in at https://dashboard.render.com with GitHub.
-2. **New + → Blueprint**, pick this repository and branch, click **Apply**.
+2. **New + → Blueprint**, pick this repository (branch `main`), click **Apply**.
 3. Wait for the build (~3–5 min); your URL appears at the top of the service page.
 4. Admin password: service → **Environment** → `ADMIN_PASSWORD` (generated; you can change it).
 
@@ -97,7 +97,7 @@ sudo dnf install -y docker git && sudo systemctl enable --now docker
 ```
 
 ```bash
-git clone -b claude/confident-albattani-1tvbnj https://github.com/Mohamed-Ali-4/WTassignment.git
+git clone https://github.com/Mohamed-Ali-4/WTassignment.git
 ```
 
 ```bash
