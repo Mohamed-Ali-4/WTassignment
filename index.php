@@ -14,9 +14,9 @@ page_start(FEST_NAME . ' - Event Registration', '', '', '', true);
 ?>
 <section id="form-section" class="card">
   <ol class="stepper" aria-label="Form progress">
-    <li class="active" data-step="1"><span class="dot">1</span><span class="label">Participant</span></li>
-    <li data-step="2"><span class="dot">2</span><span class="label">College</span></li>
-    <li data-step="3"><span class="dot">3</span><span class="label">Events &amp; Team</span></li>
+    <li class="active" data-step="1"><span class="dot">01</span><span class="label">Participant</span></li>
+    <li data-step="2"><span class="dot">02</span><span class="label">College</span></li>
+    <li data-step="3"><span class="dot">03</span><span class="label">Events &amp; Team</span></li>
   </ol>
   <div class="progress"><div class="progress-bar" style="width:33.33%"></div></div>
 
@@ -24,7 +24,7 @@ page_start(FEST_NAME . ' - Event Registration', '', '', '', true);
 
     <!-- ===================== STEP 1: Participant ===================== -->
     <fieldset class="step active" data-step="1">
-      <legend>Participant Details</legend>
+      <legend><span class="legend-no">01</span>Who are you?</legend>
 
       <div class="photo-row">
         <label for="photo" class="photo-upload" title="Upload a photo for your event pass">
@@ -95,7 +95,7 @@ page_start(FEST_NAME . ' - Event Registration', '', '', '', true);
 
     <!-- ===================== STEP 2: College ===================== -->
     <fieldset class="step" data-step="2">
-      <legend>College Details</legend>
+      <legend><span class="legend-no">02</span>Where do you study?</legend>
 
       <div class="grid two">
         <div class="field">
@@ -152,18 +152,18 @@ page_start(FEST_NAME . ' - Event Registration', '', '', '', true);
 
     <!-- ===================== STEP 3: Events & Team ===================== -->
     <fieldset class="step" data-step="3">
-      <legend>Events &amp; Team</legend>
+      <legend><span class="legend-no">03</span>Pick your battles</legend>
 
       <div class="field">
         <span class="label">Choose your events <span class="req">*</span> <span class="optional">(up to <?= MAX_EVENTS ?>)</span></span>
         <div class="event-grid" data-max="<?= MAX_EVENTS ?>">
-          <?php foreach (fest_events() as $key => $ev): ?>
+          <?php $n = 0; foreach (fest_events() as $key => $ev): $n++; ?>
             <label class="event-card">
               <input type="checkbox" name="events[]" value="<?= e($key) ?>" data-fee="<?= (int) $ev['fee'] ?>" data-name="<?= e($ev['name']) ?>">
               <span class="event-inner">
                 <span class="event-top">
                   <span class="event-icon"><?= event_icon($ev['icon']) ?></span>
-                  <span class="event-cat"><?= e($ev['category']) ?></span>
+                  <span class="event-cat"><span class="event-no"><?= sprintf('%02d', $n) ?></span> <?= e($ev['category']) ?></span>
                   <span class="event-check" aria-hidden="true"></span>
                 </span>
                 <strong class="event-name"><?= e($ev['name']) ?></strong>
@@ -241,7 +241,7 @@ page_start(FEST_NAME . ' - Event Registration', '', '', '', true);
 
       <div class="fee-box" aria-live="polite">
         <div class="fee-head">
-          <span>Registration fee</span>
+          <span>Total payable</span>
           <strong id="feeTotal"><?= rupees(0) ?></strong>
         </div>
         <ul id="feeLines"><li class="muted">No events selected yet.</li></ul>

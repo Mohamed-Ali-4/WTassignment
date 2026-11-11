@@ -164,7 +164,7 @@ $(function () {
     $stepper.each(function () {
       var s = +$(this).data('step');
       $(this).toggleClass('active', s === step).toggleClass('done', s < step);
-      $(this).find('.dot').html(s < step ? '&#10003;' : s);
+      $(this).find('.dot').html(s < step ? '&#10003;' : '0' + s);
     });
     $bar.css('width', (step / total * 100) + '%');
     $('html, body').animate({ scrollTop: $('#form-section').offset().top - 20 }, 300);

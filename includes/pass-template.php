@@ -9,7 +9,7 @@
 $isTeam = $d['participation'] === 'Team';
 ?>
 <article class="card result">
-  <div class="success-banner">
+  <div class="success-banner<?= $admin ? ' is-admin' : '' ?>">
     <?php if ($admin): ?>
       <h2>Registration <?= e($d['reg_id']) ?></h2>
       <p>Received on <?= e($d['submitted']) ?></p>

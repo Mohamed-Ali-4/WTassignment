@@ -5,11 +5,12 @@ declare(strict_types=1);
 
 /**
  * @param string $base  Relative path to the site root ('' or '../').
- * @param bool   $hero  Show the big fest banner with countdown (registration page only).
+ * @param bool   $hero  Show the big fest poster with countdown (registration page only).
  */
 function page_start(string $title, string $base = '', string $subtitle = '', string $nav = '', bool $hero = false): void
 {
     $subtitle = $subtitle !== '' ? $subtitle : e(FEST_TAGLINE);
+    $events = fest_events();
     ?>
 <!DOCTYPE html>
 <html lang="en" class="no-js">
@@ -18,53 +19,75 @@ function page_start(string $title, string $base = '', string $subtitle = '', str
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= e($title) ?></title>
   <meta name="description" content="<?= e(FEST_NAME . ' - ' . FEST_TAGLINE . '. Online event registration.') ?>">
+  <meta name="theme-color" content="#121212">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= e($base) ?>assets/css/style.css">
   <script>document.documentElement.className = 'js';</script>
 </head>
 <body>
-  <div class="bg-shapes" aria-hidden="true"><span></span><span></span><span></span></div>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <?php if ($hero): ?>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <?php for ($i = 0; $i < 2; $i++): ?>
+        <span>
+          <?php foreach ($events as $ev): ?><b><?= e($ev['name']) ?></b><i>&#10022;</i><?php endforeach; ?>
+        </span>
+      <?php endfor; ?>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <header class="site-header<?= $hero ? ' has-hero' : '' ?>">
     <div class="brand">
       <a class="logo" href="<?= e($base) ?>./" aria-label="<?= e(FEST_NAME) ?> home">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.5 3 14h8l-1.5 8.5L21 10h-8l.5-8.5z"/></svg>
       </a>
       <div class="brand-text">
-        <h1><?= e(FEST_NAME) ?></h1>
-        <p><?= $subtitle ?></p>
+        <span class="brand-name"><?= e(FEST_NAME) ?></span>
+        <span class="brand-sub"><?= $subtitle ?></span>
       </div>
       <?= $nav ?>
     </div>
 
     <?php if ($hero): ?>
     <div class="hero">
-      <p class="hero-kicker">Registrations open</p>
-      <h2 class="hero-title">Code. Build. Compete.</h2>
-      <p class="hero-sub">Three days, eight events and plenty of prizes. Register below to get your event pass.</p>
-      <ul class="hero-meta">
-        <li>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          <?= e(FEST_DATES) ?>
-        </li>
-        <li>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-          <?= e(FEST_VENUE) ?>
-        </li>
-      </ul>
-      <div class="countdown" data-start="<?= e(FEST_START) ?>" aria-label="Time until the fest starts">
-        <div><strong data-unit="d">--</strong><span>Days</span></div>
-        <div><strong data-unit="h">--</strong><span>Hours</span></div>
-        <div><strong data-unit="m">--</strong><span>Minutes</span></div>
-        <div><strong data-unit="s">--</strong><span>Seconds</span></div>
-      </div>
+      <p class="hero-kicker"><span class="live-dot"></span>Registrations open &middot; <?= count($events) ?> events &middot; 3 days</p>
+      <h1 class="hero-title">
+        <span class="hero-word">TechVerse</span>
+        <span class="hero-year">2027</span>
+      </h1>
+      <p class="hero-sub">Code, build and compete with students from across the country. Pick up to <?= MAX_EVENTS ?> events, bring your team, and walk away with your pass in under three minutes.</p>
+
+      <dl class="hero-facts">
+        <div>
+          <dt>Dates</dt>
+          <dd><?= e(FEST_DATES) ?></dd>
+        </div>
+        <div>
+          <dt>Venue</dt>
+          <dd><?= e(FEST_VENUE) ?></dd>
+        </div>
+        <div class="hero-countdown">
+          <dt>Starts in</dt>
+          <dd class="countdown" data-start="<?= e(FEST_START) ?>" aria-label="Time until the fest starts">
+            <span><strong data-unit="d">--</strong>d</span>
+            <span><strong data-unit="h">--</strong>h</span>
+            <span><strong data-unit="m">--</strong>m</span>
+            <span><strong data-unit="s">--</strong>s</span>
+          </dd>
+        </div>
+      </dl>
     </div>
+    <?php else: ?>
+    <h1 class="visually-hidden"><?= e($title) ?></h1>
     <?php endif; ?>
   </header>
 
-  <main class="container">
+  <main class="container" id="main">
     <?php
 }
 
@@ -75,7 +98,9 @@ function page_end(string $base = '', bool $app = false): void
   </main>
 
   <footer class="site-footer">
-    <p><?= e(FEST_NAME) ?> &middot; Built with HTML5, CSS3, JavaScript, jQuery &amp; PHP &middot; <a href="<?= e($base) ?>admin/">Admin</a></p>
+    <span><?= e(FEST_NAME) ?> &middot; <?= e(FEST_TAGLINE) ?></span>
+    <span>HTML &middot; CSS &middot; JavaScript &middot; jQuery &middot; PHP</span>
+    <a href="<?= e($base) ?>admin/">Organiser login &rarr;</a>
   </footer>
 
   <script src="<?= e($base) ?>assets/vendor/qrcode-generator-1.4.4.js"></script>
