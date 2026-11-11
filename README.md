@@ -1,5 +1,9 @@
 # TechVerse 2027 — Tech Fest Event Registration
 
+**Live site (AWS EC2):** http://13.54.236.227/ &nbsp;·&nbsp; **Admin panel:** http://13.54.236.227/admin/
+
+> Open with `http://` (no SSL certificate is configured for the bare IP address).
+
 An online **event registration** web application for a college technical fest, built with
 **HTML5, CSS3, JavaScript, jQuery and PHP**. Participants fill in a 3-step registration form;
 on clicking **Register Now** the data is validated, saved to a database by PHP, and a formatted
